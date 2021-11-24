@@ -2,10 +2,11 @@
 #include <WS2tcpip.h>
 #include <string>
 #include <thread>
+#include <vector>
 
 #pragma comment (lib, "ws2_32.lib")
 
-using namespace std;
+
 
 SOCKET init_server(int port) {
 	// initialze winsock
@@ -16,7 +17,7 @@ SOCKET init_server(int port) {
 	int wsOk = WSAStartup(ver, &wsData);
 
 	if (wsOk != 0) {
-		cerr << "Cant initilize winsock, quitting" << endl;
+		std::cerr << "Cant initilize winsock, quitting" << std::endl;
 		return 1;
 	}
 
@@ -25,7 +26,7 @@ SOCKET init_server(int port) {
 	SOCKET listening = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (listening == INVALID_SOCKET) {
-		cerr << "Cant create socket, quitting" << endl;
+		std::cerr << "Cant create socket, quitting" << std::endl;
 		return 1;
 	}
 
@@ -45,14 +46,10 @@ SOCKET init_server(int port) {
 	return listening;
 }
 
-void accent_client(SOCKET listening) {
+void client_connection(sockaddr_in client, SOCKET clientSocket) {
 
 
-	sockaddr_in client;
 
-	int clientsize = sizeof(client);
-
-	SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientsize);
 
 	char host[NI_MAXHOST]; // client's remote name
 	char service[NI_MAXSERV]; // port client is connected to
@@ -61,11 +58,11 @@ void accent_client(SOCKET listening) {
 	ZeroMemory(service, NI_MAXSERV);
 
 	if (getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0) {
-		cout << host << " conneted on port " << service;
+		std::cout << host << " conneted on port " << service;
 	}
 	else {
 		inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
-		cout << host << " connected on port " << ntohs(client.sin_port) << endl;
+		std::cout << host << " connected on port " << ntohs(client.sin_port) << std::endl;
 	}
 
 
@@ -78,15 +75,15 @@ void accent_client(SOCKET listening) {
 		//wait for client to send data
 
 		int bytesRecv = recv(clientSocket, buf, 4096, 0);
-		cout << buf << endl;
+		std::cout << buf << std::endl;
 
 		if (bytesRecv == SOCKET_ERROR) {
-			cerr << "Error in recv(), Quitting" << endl;
+			std::cerr << "Error in recv(), Quitting" << std::endl;
 			break;
 		}
 
 		if (bytesRecv == 0) {
-			cout << "Client disconnected" << endl;
+			std::cout << "Client disconnected" << std::endl;
 			break;
 		}
 		send(clientSocket, buf2, sizeof(buf2), 0);
@@ -111,16 +108,40 @@ int main()
 {
 	SOCKET listening = init_server(4444);
 
+	std::vector<std::thread> ThreadVector;
+
+	while (true){
+
+	sockaddr_in client;
+
+	int clientsize = sizeof(client);
+
+	SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientsize);
 
 
-	
-	accent_client(listening);
 
 
 
 
+		ThreadVector.emplace_back([&]() {client_connection(client, clientSocket); }); // Pass by reference here, make sure the object lifetime is correct
+
+
+
+
+
+			//std::thread client_connection_thread (client_connection	,client, clientSocket);
+
+			//client_connection_thread.join();
+
+	}
+
+	//for (auto& t : Threadvector)
+	//{
+	//	t.join();
+
+	//}
 	// cleanup winsock
 
 	WSACleanup();
-	cin.get();
+	std::cin.get();
 }
