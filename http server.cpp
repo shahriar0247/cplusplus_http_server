@@ -3,10 +3,20 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <algorithm>
+#include <functional>
 
 #pragma comment (lib, "ws2_32.lib")
 
 
+
+class all_routes_class {
+public:
+	std::string path;
+	std::function<std::string(SOCKET)> function;
+};
+
+all_routes_class all_routes[1024];
 
 SOCKET init_server(int port) {
 	// initialze winsock
@@ -67,45 +77,66 @@ void client_connection(sockaddr_in client, SOCKET clientSocket) {
 
 
 
-	char buf[4096];
-	char buf2[1024] = "HTTP/1.1\rHost: 200 OK\r\nContent-Type: text/html\r\nContent-Length: 633\r\n\r\n<html>\n                                                            <head>\n                                                                <title>Hello World</title>\n                                                            </head>\n                                                            <body>\n                                                                <h1>Hello World!</h1>\n                                                                <p>Welcome to the index.html web page..</p>\n                                                            </body>\n                                                            </html>\n\n\n\n";
-	while (true) {
-		ZeroMemory(buf, 4096);
 
-		//wait for client to send data
+	char buf[4096];
+	ZeroMemory(buf, 4096);
+
+
 
 		int bytesRecv = recv(clientSocket, buf, 4096, 0);
 		std::cout << buf << std::endl;
+		std::string headers = std::string(buf, sizeof(buf));
+		std::string request_info = headers.substr(0, headers.find(" HTTP/1.1"));
+		std::string request_type = request_info.substr(0, request_info.find(" "));
+		std::string request_path = request_info.substr(request_type.length() + 1);
+	
+		if (request_type == "GET") {
+			for (all_routes_class one_route : all_routes) {
+				if (one_route.path == request_path) {
+					std::function<std::string(SOCKET)> function_name = one_route.function;
+					function_name(clientSocket);
+				}
+			}
 
-		if (bytesRecv == SOCKET_ERROR) {
-			std::cerr << "Error in recv(), Quitting" << std::endl;
-			break;
+
 		}
 
-		if (bytesRecv == 0) {
-			std::cout << "Client disconnected" << std::endl;
-			break;
-		}
-		send(clientSocket, buf2, sizeof(buf2), 0);
-
-
-
-
-
-
-
-		// echo message back to client
-	}
-
-	// close socket
 
 	closesocket(clientSocket);
 
 
 }
 
+void route(std::string buf3, SOCKET clientSocket) {
+
+
+
+	std::string buf2 = "HTTP/1.1\rHost: 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string((buf3).length()) + "\r\n\r\n" + buf3;
+	char buf4[1024];
+	strcpy_s(buf4, buf2.c_str());
+
+	send(clientSocket, buf4, sizeof(buf4), 0);
+
+}
+
+std::string home(SOCKET clientSocket) {
+	
+	std::string response = "Hello World";
+	
+	
+	route(response, clientSocket);
+	return "ok";
+
+}
+
 int main()
 {
+
+	all_routes_class route;
+	route.path = "/";
+	route.function = home;
+	all_routes[0] = route;
+
 	SOCKET listening = init_server(4444);
 
 	std::vector<std::thread> ThreadVector;
