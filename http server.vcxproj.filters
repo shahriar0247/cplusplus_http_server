@@ -21,14 +21,23 @@
     <ClCompile Include="http server.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="views.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="http server.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="views.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="lol.html">
+      <Filter>templates</Filter>
+    </None>
+    <None Include="login.html">
       <Filter>templates</Filter>
     </None>
   </ItemGroup>

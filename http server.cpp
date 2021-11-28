@@ -7,6 +7,7 @@
 #include <functional>
 #include <fstream>
 #include <sstream>
+#include "views.h"
 
 #pragma comment (lib, "ws2_32.lib")
 
@@ -17,6 +18,7 @@ public:
 	std::string path;
 	std::function<void(SOCKET)> function;
 };
+
 
 all_routes_class all_routes[1024];
 
@@ -136,26 +138,28 @@ std::string render_html(std::string filename) {
 	return response;
 }
 
-void home(SOCKET clientSocket) {
-
-	 std::string response = render_html("lol.html");
-	route(response, clientSocket);
-
-}
 
 void add_view(std::string path, std::function<void(SOCKET)> function) {
 
 	all_routes_class route;
 	route.path = path;
 	route.function = function;
-	all_routes[0] = route;
+	
+	all_routes_class empty_route;
+	for (int i = 0; i < (sizeof(all_routes) / sizeof(*all_routes)); i++) {
+		if (all_routes[i].path == empty_route.path && sizeof(all_routes[i].function) == sizeof(empty_route.function)) {
+			all_routes[i] = route;
+			break;
+		}
+	}
+
 
 }
 
 int main()
 {
 
-	add_view("/", home);
+	add_all_views();
 
 	SOCKET listening = init_server(80);
 

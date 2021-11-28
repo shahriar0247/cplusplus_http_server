@@ -140,11 +140,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="http server.cpp" />
+    <ClCompile Include="views.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="http server.h" />
+    <ClInclude Include="views.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="login.html" />
     <None Include="lol.html" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
