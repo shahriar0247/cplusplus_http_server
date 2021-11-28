@@ -5,6 +5,8 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#include <fstream>
+#include <sstream>
 
 #pragma comment (lib, "ws2_32.lib")
 
@@ -13,7 +15,7 @@
 class all_routes_class {
 public:
 	std::string path;
-	std::function<std::string(SOCKET)> function;
+	std::function<void(SOCKET)> function;
 };
 
 all_routes_class all_routes[1024];
@@ -83,23 +85,23 @@ void client_connection(sockaddr_in client, SOCKET clientSocket) {
 
 
 
-		int bytesRecv = recv(clientSocket, buf, 4096, 0);
-		std::cout << buf << std::endl;
-		std::string headers = std::string(buf, sizeof(buf));
-		std::string request_info = headers.substr(0, headers.find(" HTTP/1.1"));
-		std::string request_type = request_info.substr(0, request_info.find(" "));
-		std::string request_path = request_info.substr(request_type.length() + 1);
-	
-		if (request_type == "GET") {
-			for (all_routes_class one_route : all_routes) {
-				if (one_route.path == request_path) {
-					std::function<std::string(SOCKET)> function_name = one_route.function;
-					function_name(clientSocket);
-				}
+	int bytesRecv = recv(clientSocket, buf, 4096, 0);
+	std::cout << buf << std::endl;
+	std::string headers = std::string(buf, sizeof(buf));
+	std::string request_info = headers.substr(0, headers.find(" HTTP/1.1"));
+	std::string request_type = request_info.substr(0, request_info.find(" "));
+	std::string request_path = request_info.substr(request_type.length() + 1);
+
+	if (request_type == "GET") {
+		for (all_routes_class one_route : all_routes) {
+			if (one_route.path == request_path) {
+				std::function<void(SOCKET)> function_name = one_route.function;
+				function_name(clientSocket);
 			}
-
-
 		}
+
+
+	}
 
 
 	closesocket(clientSocket);
@@ -119,60 +121,62 @@ void route(std::string buf3, SOCKET clientSocket) {
 
 }
 
-std::string home(SOCKET clientSocket) {
-	
+std::string render_html(std::string filename) {
 	std::string response = "Hello World";
-	
-	
+	std::ifstream html_template;
+	html_template.open(filename);
+
+	if (!html_template.is_open()) {
+		response = "<h2>File not found</h2>";
+	}
+
+	std::stringstream strStream;
+	strStream << html_template.rdbuf(); //read the file
+	response = strStream.str(); //str holds the content of the file
+	return response;
+}
+
+void home(SOCKET clientSocket) {
+
+	 std::string response = render_html("lol.html");
 	route(response, clientSocket);
-	return "ok";
+
+}
+
+void add_view(std::string path, std::function<void(SOCKET)> function) {
+
+	all_routes_class route;
+	route.path = path;
+	route.function = function;
+	all_routes[0] = route;
 
 }
 
 int main()
 {
 
-	all_routes_class route;
-	route.path = "/";
-	route.function = home;
-	all_routes[0] = route;
+	add_view("/", home);
 
-	SOCKET listening = init_server(4444);
+	SOCKET listening = init_server(80);
 
 	std::vector<std::thread> ThreadVector;
 
-	while (true){
+	while (true) {
 
-	sockaddr_in client;
+		sockaddr_in client;
 
-	int clientsize = sizeof(client);
+		int clientsize = sizeof(client);
 
-	SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientsize);
+		SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientsize);
 
-
-
-
+		ThreadVector.emplace_back([&]() {client_connection(client, clientSocket); });
 
 
-		ThreadVector.emplace_back([&]() {client_connection(client, clientSocket); }); // Pass by reference here, make sure the object lifetime is correct
-
-
-
-
-
-			//std::thread client_connection_thread (client_connection	,client, clientSocket);
-
-			//client_connection_thread.join();
 
 	}
 
-	//for (auto& t : Threadvector)
-	//{
-	//	t.join();
 
-	//}
-	// cleanup winsock
 
 	WSACleanup();
-	std::cin.get();
+
 }

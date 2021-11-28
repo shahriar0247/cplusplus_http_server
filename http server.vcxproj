@@ -144,6 +144,9 @@
   <ItemGroup>
     <ClInclude Include="http server.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="lol.html" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
