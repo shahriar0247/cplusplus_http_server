@@ -8,7 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include "views.h"
-
+#include <thread>
 #pragma comment (lib, "ws2_32.lib")
 
 
@@ -156,15 +156,9 @@ void add_view(std::string path, std::function<void(SOCKET)> function) {
 
 }
 
-int main()
-{
 
-	add_all_views();
 
-	SOCKET listening = init_server(80);
-
-	std::vector<std::thread> ThreadVector;
-
+void listen_for_client(SOCKET listening) {
 	while (true) {
 
 		sockaddr_in client;
@@ -172,14 +166,31 @@ int main()
 		int clientsize = sizeof(client);
 
 		SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientsize);
+		client_connection(client, clientSocket);
 
-		ThreadVector.emplace_back([&]() {client_connection(client, clientSocket); });
-
-
+		// spawn n threads:
 
 	}
+}
+int main()
+{
+
+	add_all_views();
+
+	SOCKET listening = init_server(80);
 
 
+	int n = 10;
+	std::vector<std::thread> threads(n);
+
+
+	for (int i = 0; i < n; i++) {
+		threads[i] = std::thread(listen_for_client, listening);
+	}
+
+	for (auto& th : threads) {
+		th.join();
+	}
 
 	WSACleanup();
 
